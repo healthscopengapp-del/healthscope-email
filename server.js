@@ -1,52 +1,53 @@
 require("dotenv").config();
 const express = require("express");
+const bodyParser = require("body-parser");
 const nodemailer = require("nodemailer");
 
 const app = express();
-app.use(express.json());
+app.use(bodyParser.json());
+
+// Root route for testing in browser
+app.get("/", (req, res) => {
+  res.send("✅ Healthscope Email API is running. Use POST /send-email to send emails.");
+});
 
 // POST /send-email
 app.post("/send-email", async (req, res) => {
-  try {
-    // Create a test account (Ethereal)
-    let testAccount = await nodemailer.createTestAccount();
+  const { to, subject, text } = req.body;
 
-    // Create a transporter using Ethereal
-    let transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
+  if (!to || !subject || !text) {
+    return res.status(400).json({ error: "Missing to, subject, or text" });
+  }
+
+  try {
+    // Use Gmail (needs App Password) or fallback to Ethereal for testing
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
       port: 587,
       secure: false,
       auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
-    const { to, subject, text } = req.body;
-
-    // Send mail
-    let info = await transporter.sendMail({
-      from: '"Healthscope Mailer" <no-reply@healthscope.com>',
+    const info = await transporter.sendMail({
+      from: `"Healthscope App" <${process.env.SMTP_USER}>`,
       to,
       subject,
       text,
     });
 
-    console.log("Message sent: %s", info.messageId);
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-
-    res.json({
-      message: "Email sent (Ethereal test)",
-      previewUrl: nodemailer.getTestMessageUrl(info),
-    });
-  } catch (error) {
-    console.error("Error sending email:", error);
-    res.status(500).json({ error: "Failed to send email" });
+    console.log("Message sent:", info.messageId);
+    res.json({ success: true, messageId: info.messageId });
+  } catch (err) {
+    console.error("Send failed:", err);
+    res.status(500).json({ error: "Failed to send email", details: err.message });
   }
 });
 
-// Port (Render sets PORT in env)
+// Use Render’s dynamic PORT or fallback to 3000 locally
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
