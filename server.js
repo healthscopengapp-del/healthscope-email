@@ -1,50 +1,51 @@
-require('dotenv').config();
-const express = require('express');
-const bodyParser = require('body-parser');
-const nodemailer = require('nodemailer');
+require("dotenv").config();
+const express = require("express");
+const nodemailer = require("nodemailer");
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 
 // POST /send-email
-app.post('/send-email', async (req, res) => {
-  const { to, subject, text } = req.body;
-
+app.post("/send-email", async (req, res) => {
   try {
-    // Create a test Ethereal account automatically
-    const testAccount = await nodemailer.createTestAccount();
+    // Create a test account (Ethereal)
+    let testAccount = await nodemailer.createTestAccount();
 
-    const transporter = nodemailer.createTransport({
+    // Create a transporter using Ethereal
+    let transporter = nodemailer.createTransport({
       host: "smtp.ethereal.email",
       port: 587,
       secure: false,
       auth: {
         user: testAccount.user,
-        pass: testAccount.pass
-      }
+        pass: testAccount.pass,
+      },
     });
 
-    const info = await transporter.sendMail({
-      from: '"Healthscope App" <test@example.com>',
-      to: to || "ikchils@gmail.com",  // fallback to your email
-      subject: subject || "Healthscope test (Ethereal)",
-      text: text || "Hello from Healthscope Email Service (Ethereal)",
+    const { to, subject, text } = req.body;
+
+    // Send mail
+    let info = await transporter.sendMail({
+      from: '"Healthscope Mailer" <no-reply@healthscope.com>',
+      to,
+      subject,
+      text,
     });
 
-    console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
+    console.log("Message sent: %s", info.messageId);
+    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 
     res.json({
-      success: true,
-      messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info) // <- check this link in logs
+      message: "Email sent (Ethereal test)",
+      previewUrl: nodemailer.getTestMessageUrl(info),
     });
-
-  } catch (err) {
-    console.error('Send failed:', err);
-    res.status(500).json({ error: 'Failed to send email' });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ error: "Failed to send email" });
   }
 });
 
+// Port (Render sets PORT in env)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
