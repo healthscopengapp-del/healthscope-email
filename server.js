@@ -6,9 +6,12 @@ const nodemailer = require('nodemailer');
 const app = express();
 app.use(bodyParser.json());
 
-// Root route
-app.get('/', (req, res) => {
-  res.send('✅ Healthscope Email API is running');
+// SendGrid transport
+const transporter = nodemailer.createTransport({
+  service: 'SendGrid',
+  auth: {
+    api_key: process.env.SENDGRID_API_KEY,
+  },
 });
 
 // POST /send-email
@@ -20,34 +23,21 @@ app.post('/send-email', async (req, res) => {
   }
 
   try {
-    // Right now this will fail without SendGrid or SMTP,
-    // but we’ll keep it in place for later.
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
     const info = await transporter.sendMail({
-      from: `"Healthscope App" <${process.env.SMTP_USER}>`,
+      from: process.env.FROM_EMAIL,
       to,
       subject,
       text,
     });
 
-    console.log('Message sent:', info.messageId);
-    res.json({ success: true, messageId: info.messageId });
+    console.log('Message sent:', info);
+    res.json({ success: true, message: info });
   } catch (err) {
-    console.error('Send failed:', err.message);
-    res.status(500).json({ error: 'Email sending not set up yet' });
+    console.error('Send failed:', err);
+    res.status(500).json({ error: 'Failed to send email' });
   }
 });
 
-// Use Render’s port
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
