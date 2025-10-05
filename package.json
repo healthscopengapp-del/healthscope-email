@@ -1,18 +1,19 @@
 {
   "name": "healthscope-email",
   "version": "1.0.0",
+  "description": "Healthscope Email Service using Express and SendGrid",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Healthscope email service",
   "dependencies": {
+    "body-parser": "^1.20.2",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "nodemailer": "^7.0.6"
   }
 }
-
